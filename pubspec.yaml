@@ -1,0 +1,54 @@
+name: memory_flow
+description: A spaced repetition app for effective learning and memory retention.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Markdown
+  flutter_markdown: ^0.6.18
+  table_calendar: ^3.0.9
+
+  # Local Storage & Database
+  path_provider: ^2.1.1
+  sqflite: ^2.3.0
+  shared_preferences: ^2.2.2
+
+  # Notifications
+  flutter_local_notifications: ^18.0.1
+
+  # Google Services
+  google_sign_in: ^6.2.1
+  googleapis: ^11.4.0
+
+  # State Management
+  provider: ^6.1.1
+
+  # Utilities
+  intl: ^0.18.1
+  uuid: ^4.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  # assets:
+  #   - images/
+  #   - assets/
+
+  # fonts:
+  #   - family: CustomFont
+  #     fonts:
+  #       - asset: fonts/CustomFont-Regular.ttf
+  #       - asset: fonts/CustomFont-Bold.ttf
+  #         weight: 700
