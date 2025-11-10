@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../constants/app_constants.dart';
 import '../models/topic.dart';
 import '../services/file_service.dart';
 import '../services/topics_index_service.dart';
+import '../services/notification_service.dart';
 import '../utils/markdown_helper.dart';
 import '../utils/theme_helper.dart';
 import '../widgets/common/markdown_toolbar.dart';
 import '../widgets/common/custom_button.dart';
+import '../widgets/pickers/custom_date_time_picker.dart';
 import '../providers/navigation_provider.dart';
 
 /// Add Topic screen - Create new topics with markdown editor
@@ -25,11 +28,19 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
   final _contentController = TextEditingController();
   final _fileService = FileService();
   final _topicsIndexService = TopicsIndexService();
+  final _notificationService = NotificationService();
 
   bool _isPreviewMode = false;
   bool _isSaving = false;
   int _wordCount = 0;
   int _characterCount = 0;
+
+  // Scheduling options
+  String _scheduleType = 'auto'; // 'auto' or 'custom'
+  DateTime? _customScheduleDateTime;
+  TimeOfDay _reminderTime = const TimeOfDay(hour: 9, minute: 0);
+
+  bool _showScheduleSection = false; // Toggle for scheduling section
 
   @override
   void initState() {
@@ -130,10 +141,38 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
     });
 
     try {
-      // Create new topic with UUID
+      // Calculate first review date based on schedule type
+      DateTime firstReviewDate;
+      bool useCustomSchedule;
+      DateTime? customReviewDatetime;
+
+      if (_scheduleType == 'custom' && _customScheduleDateTime != null) {
+        // Use custom schedule
+        firstReviewDate = _customScheduleDateTime!;
+        useCustomSchedule = true;
+        customReviewDatetime = _customScheduleDateTime;
+      } else {
+        // Use auto schedule (tomorrow at reminder time)
+        final tomorrow = DateTime.now().add(const Duration(days: 1));
+        firstReviewDate = DateTime(
+          tomorrow.year,
+          tomorrow.month,
+          tomorrow.day,
+          _reminderTime.hour,
+          _reminderTime.minute,
+        );
+        useCustomSchedule = false;
+        customReviewDatetime = null;
+      }
+
+      // Create new topic with UUID and schedule info
       final topic = Topic.create(
         title: _titleController.text.trim(),
         filePath: 'topics/placeholder.md', // Will be updated with actual path
+      ).copyWith(
+        nextReviewDate: firstReviewDate,
+        useCustomSchedule: useCustomSchedule,
+        customReviewDatetime: customReviewDatetime,
       );
 
       // Save markdown content to file
@@ -148,22 +187,43 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
       // Add topic to index
       await _topicsIndexService.addTopic(updatedTopic);
 
+      // Schedule notification for the first review
+      try {
+        await _notificationService.scheduleTopicReminder(
+          updatedTopic.id,
+          firstReviewDate,
+        );
+        print('✓ Notification scheduled for ${updatedTopic.title}');
+      } catch (e) {
+        print('⚠ Failed to schedule notification: $e');
+        // Don't fail the save operation if notification scheduling fails
+      }
+
       // Show success message
       if (mounted) {
+        final scheduleInfo = _scheduleType == 'custom'
+            ? 'Review: ${DateFormat('MMM d, y \'at\' h:mm a').format(firstReviewDate)}'
+            : 'First review: Tomorrow at ${_reminderTime.format(context)}';
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               'Topic "${updatedTopic.title}" saved successfully!\n'
-              '${_wordCount} words, ${_characterCount} characters',
+              '$scheduleInfo',
             ),
             backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 3),
           ),
         );
 
         // Clear the form
         _titleController.clear();
         _contentController.clear();
+        setState(() {
+          _scheduleType = 'auto';
+          _customScheduleDateTime = null;
+          _showScheduleSection = false;
+        });
 
         // Navigate back to home screen (index 0)
         final navigationProvider = context.read<NavigationProvider>();
@@ -229,9 +289,28 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
 
             // Editor or Preview
             Expanded(
-              child: _isPreviewMode
-                  ? _buildPreview()
-                  : _buildEditor(),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // Editor/Preview
+                    SizedBox(
+                      height: _showScheduleSection ? 250 : 400,
+                      child: _isPreviewMode
+                          ? _buildPreview()
+                          : _buildEditor(),
+                    ),
+
+                    // Schedule Section Toggle
+                    _buildScheduleSectionToggle(),
+
+                    // Schedule Section (expandable)
+                    if (_showScheduleSection) ...[
+                      ThemeHelper.vSpaceSmall,
+                      _buildScheduleSection(),
+                    ],
+                  ],
+                ),
+              ),
             ),
 
             // Save button
@@ -406,6 +485,284 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
               ),
             ),
     );
+  }
+
+  /// Build schedule section toggle button
+  Widget _buildScheduleSectionToggle() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _showScheduleSection = !_showScheduleSection;
+          });
+        },
+        borderRadius: ThemeHelper.standardRadius,
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.surfaceDark
+                : AppColors.white,
+            border: Border.all(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.gray700
+                  : AppColors.gray300,
+            ),
+            borderRadius: ThemeHelper.standardRadius,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.schedule,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              ThemeHelper.hSpaceSmall,
+              Expanded(
+                child: Text(
+                  'Schedule Options',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ),
+              Icon(
+                _showScheduleSection ? Icons.expand_less : Icons.expand_more,
+                color: Theme.of(context).textTheme.bodySmall?.color,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build the schedule section
+  Widget _buildScheduleSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.surfaceDark
+            : AppColors.white,
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.gray700
+              : AppColors.gray300,
+        ),
+        borderRadius: ThemeHelper.standardRadius,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Schedule Type Options
+          Text(
+            'First Review',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+          ),
+          ThemeHelper.vSpaceMedium,
+
+          // Auto option
+          _buildScheduleOption(
+            icon: Icons.flash_on,
+            label: 'Auto (Tomorrow)',
+            description: 'First review: Tomorrow at ${_reminderTime.format(context)}',
+            isSelected: _scheduleType == 'auto',
+            onTap: () {
+              setState(() {
+                _scheduleType = 'auto';
+              });
+            },
+          ),
+          ThemeHelper.vSpaceSmall,
+
+          // Custom option
+          _buildScheduleOption(
+            icon: Icons.calendar_today,
+            label: 'Custom Date & Time',
+            description: _customScheduleDateTime != null
+                ? DateFormat('MMM d, y \'at\' h:mm a').format(_customScheduleDateTime!)
+                : 'Choose specific date and time',
+            isSelected: _scheduleType == 'custom',
+            onTap: () {
+              setState(() {
+                _scheduleType = 'custom';
+              });
+            },
+          ),
+
+          // Custom date/time picker (shown when custom is selected)
+          if (_scheduleType == 'custom') ...[
+            ThemeHelper.vSpaceMedium,
+            CustomDateTimePicker(
+              initialDateTime: _customScheduleDateTime,
+              onDateTimeSelected: (dateTime) {
+                setState(() {
+                  _customScheduleDateTime = dateTime;
+                });
+              },
+              label: 'Select Review Date & Time',
+              minimumDate: DateTime.now().add(const Duration(hours: 1)),
+              showLabel: false,
+            ),
+          ],
+
+          ThemeHelper.vSpaceLarge,
+
+          // Reminder Time
+          Text(
+            'Reminder Time',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+          ),
+          ThemeHelper.vSpaceSmall,
+          Text(
+            'Default time for auto-scheduled reviews',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          ThemeHelper.vSpaceMedium,
+
+          OutlinedButton.icon(
+            onPressed: _handleChangeReminderTime,
+            icon: const Icon(Icons.access_time, size: 20),
+            label: Text(
+              'Change Time: ${_reminderTime.format(context)}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.md,
+              ),
+              side: BorderSide(
+                color: AppColors.primary,
+                width: 2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build a schedule option button
+  Widget _buildScheduleOption({
+    required IconData icon,
+    required String label,
+    required String description,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: ThemeHelper.standardRadius,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: ThemeHelper.standardRadius,
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.gray700
+                    : AppColors.gray300,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withOpacity(0.2)
+                    : Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.gray800
+                        : AppColors.gray100,
+                borderRadius: BorderRadius.circular(AppBorderRadius.md),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isSelected
+                    ? AppColors.primary
+                    : Theme.of(context).textTheme.bodySmall?.color,
+              ),
+            ),
+            ThemeHelper.hSpaceMedium,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          color: isSelected ? AppColors.primary : null,
+                        ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle,
+                color: AppColors.primary,
+                size: 20,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Handle changing the reminder time
+  Future<void> _handleChangeReminderTime() async {
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: _reminderTime,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: AppColors.white,
+              surface: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.surfaceDark
+                  : AppColors.white,
+              onSurface: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textPrimaryLight,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedTime != null) {
+      setState(() {
+        _reminderTime = pickedTime;
+      });
+    }
   }
 
   Widget _buildSaveButton() {

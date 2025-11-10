@@ -5,8 +5,10 @@ import '../constants/app_constants.dart';
 import '../models/topic.dart';
 import '../services/file_service.dart';
 import '../services/topics_index_service.dart';
+import '../services/spaced_repetition_service.dart';
 import '../utils/theme_helper.dart';
 import '../widgets/common/custom_button.dart';
+import '../widgets/dialogs/reschedule_dialog.dart';
 
 /// Topic Detail screen - View topic content and metadata
 class TopicDetailScreen extends StatefulWidget {
@@ -25,6 +27,7 @@ class TopicDetailScreen extends StatefulWidget {
 class _TopicDetailScreenState extends State<TopicDetailScreen> {
   final FileService _fileService = FileService();
   final TopicsIndexService _topicsService = TopicsIndexService();
+  final SpacedRepetitionService _spacedRepService = SpacedRepetitionService();
 
   late Topic _currentTopic;
   String? _content;
@@ -257,13 +260,8 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
           ThemeHelper.divider,
           ThemeHelper.vSpaceSmall,
 
-          // Current stage
-          _buildMetadataRow(
-            context,
-            icon: Icons.layers,
-            label: 'Current Stage',
-            value: 'Stage ${_currentTopic.currentStage + 1} of ${_currentTopic.totalStages} - ${_currentTopic.stageDescription}',
-          ),
+          // Current stage with interval
+          _buildStageRow(context),
           ThemeHelper.vSpaceSmall,
 
           // Progress bar
@@ -277,7 +275,7 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
             context,
             icon: Icons.repeat,
             label: 'Reviews',
-            value: '${_currentTopic.reviewCount} times',
+            value: 'Reviewed ${_currentTopic.reviewCount} times',
           ),
           ThemeHelper.vSpaceSmall,
           ThemeHelper.divider,
@@ -326,6 +324,57 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
                 fontWeight: FontWeight.w600,
                 color: valueColor,
               ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStageRow(BuildContext context) {
+    final stageDescription = _spacedRepService.getStageDescription(_currentTopic.currentStage);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.layers,
+              size: 20,
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
+            ThemeHelper.hSpaceSmall,
+            Expanded(
+              child: Text(
+                'Current Stage',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
+              ),
+            ),
+          ],
+        ),
+        ThemeHelper.vSpaceSmall,
+        Padding(
+          padding: const EdgeInsets.only(left: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Stage ${_currentTopic.currentStage + 1} of ${SpacedRepetitionService.totalStages}',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$stageDescription interval',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -567,11 +616,8 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
 
   Future<void> _handleMarkAsReviewed(BuildContext context) async {
     try {
-      // Mark topic as reviewed and advance stage
-      final updatedTopic = _currentTopic.markAsReviewed();
-
-      // Save to database
-      await _topicsService.updateTopic(updatedTopic);
+      // Use SpacedRepetitionService to mark as reviewed
+      final updatedTopic = await _spacedRepService.markAsReviewed(_currentTopic.id);
 
       // Update local state
       setState(() {
@@ -581,26 +627,22 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
       if (!mounted) return;
 
       // Show success dialog
-      showDialog(
+      await showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Review Completed!'),
-          content: Text(
-            'Great job! Topic "${updatedTopic.title}" has been marked as reviewed.\n\n'
-            'Stage: ${updatedTopic.currentStage + 1}/${updatedTopic.totalStages}\n'
-            'Next review: ${updatedTopic.stageDescription}',
-          ),
-          actions: [
-            CustomButton.primary(
-              text: 'Done',
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context, true); // Return to previous screen with update flag
-              },
-            ),
-          ],
+        barrierDismissible: false,
+        builder: (context) => _ReviewSuccessDialog(
+          topic: updatedTopic,
+          spacedRepService: _spacedRepService,
         ),
       );
+
+      if (!mounted) return;
+
+      // Auto-dismiss after 2 seconds and navigate back
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        Navigator.pop(context, true); // Return to previous screen with update flag
+      }
     } catch (e) {
       if (!mounted) return;
 
@@ -614,65 +656,15 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
     }
   }
 
-  void _handleReschedule(BuildContext context) {
-    print('Reschedule topic: ${_currentTopic.id}');
-
-    showDialog(
+  Future<void> _handleReschedule(BuildContext context) async {
+    await RescheduleDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reschedule Review'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Choose when to review this topic:'),
-            ThemeHelper.vSpaceMedium,
-            _buildRescheduleOption(context, 'Later today', () {
-              print('Rescheduled to: later today');
-              Navigator.pop(context);
-            }),
-            _buildRescheduleOption(context, 'Tomorrow', () {
-              print('Rescheduled to: tomorrow');
-              Navigator.pop(context);
-            }),
-            _buildRescheduleOption(context, 'In 3 days', () {
-              print('Rescheduled to: 3 days');
-              Navigator.pop(context);
-            }),
-            _buildRescheduleOption(context, 'Next week', () {
-              print('Rescheduled to: next week');
-              Navigator.pop(context);
-            }),
-          ],
-        ),
-        actions: [
-          CustomButton.text(
-            text: 'Cancel',
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRescheduleOption(
-    BuildContext context,
-    String label,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: ThemeHelper.standardRadius,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-      ),
+      topic: _currentTopic,
+      onRescheduled: (updatedTopic) {
+        setState(() {
+          _currentTopic = updatedTopic;
+        });
+      },
     );
   }
 
@@ -821,7 +813,7 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
         title: const Text('Reset Progress?'),
         content: const Text(
           'This will reset all review progress for this topic. '
-          'You will start from Stage 1 again.',
+          'You will start from Stage 1 again with a 1-day interval.',
         ),
         actions: [
           TextButton(
@@ -842,10 +834,8 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
-      final resetTopic = _currentTopic.resetProgress();
-
-      // Save to database
-      await _topicsService.updateTopic(resetTopic);
+      // Use SpacedRepetitionService to reset topic
+      final resetTopic = await _spacedRepService.resetTopic(_currentTopic.id);
 
       // Update local state
       setState(() {
@@ -856,7 +846,7 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Progress has been reset'),
+          content: Text('Progress has been reset to Stage 1'),
           backgroundColor: AppColors.success,
           duration: Duration(seconds: 2),
         ),
@@ -872,5 +862,169 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
         ),
       );
     }
+  }
+}
+
+/// Success dialog shown after marking topic as reviewed
+class _ReviewSuccessDialog extends StatefulWidget {
+  final Topic topic;
+  final SpacedRepetitionService spacedRepService;
+
+  const _ReviewSuccessDialog({
+    required this.topic,
+    required this.spacedRepService,
+  });
+
+  @override
+  State<_ReviewSuccessDialog> createState() => _ReviewSuccessDialogState();
+}
+
+class _ReviewSuccessDialogState extends State<_ReviewSuccessDialog>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _scaleAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeIn,
+    );
+
+    _controller.forward();
+
+    // Auto-dismiss after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final stageDescription = widget.spacedRepService.getStageDescription(widget.topic.currentStage);
+    final nextReviewFormatted = DateFormat('MMM d').format(widget.topic.nextReviewDate);
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Success icon with animation
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle,
+                  color: AppColors.success,
+                  size: 50,
+                ),
+              ),
+              ThemeHelper.vSpaceMedium,
+
+              // Title
+              Text(
+                'Great Job!',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.success,
+                    ),
+              ),
+              ThemeHelper.vSpaceSmall,
+
+              // Success message
+              Text(
+                'Topic reviewed successfully',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              ThemeHelper.vSpaceLarge,
+
+              // Stage info card
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.2),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Stage
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Stage',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Text(
+                          '${widget.topic.currentStage + 1} of ${SpacedRepetitionService.totalStages}',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                    ThemeHelper.vSpaceSmall,
+
+                    // Next review
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Next Review',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Text(
+                          '$nextReviewFormatted ($stageDescription)',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

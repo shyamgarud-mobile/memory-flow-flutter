@@ -3,8 +3,19 @@ import 'package:provider/provider.dart';
 import 'constants/app_constants.dart';
 import 'screens/main_navigation.dart';
 import 'providers/navigation_provider.dart';
+import 'services/notification_service.dart';
 
-void main() {
+void main() async {
+  // Ensure Flutter binding is initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize notification service
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+
+  // Request notification permissions
+  await notificationService.requestPermissions();
+
   runApp(const MemoryFlowApp());
 }
 

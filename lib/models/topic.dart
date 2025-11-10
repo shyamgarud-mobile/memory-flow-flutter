@@ -40,6 +40,12 @@ class Topic {
   /// Whether the topic is marked as favorite
   final bool isFavorite;
 
+  /// Whether using custom schedule instead of automatic spaced repetition
+  final bool useCustomSchedule;
+
+  /// Custom review datetime (only used if useCustomSchedule is true)
+  final DateTime? customReviewDatetime;
+
   /// UUID generator instance
   static const _uuid = Uuid();
 
@@ -54,6 +60,8 @@ class Topic {
     this.reviewCount = 0,
     this.tags = const [],
     this.isFavorite = false,
+    this.useCustomSchedule = false,
+    this.customReviewDatetime,
   });
 
   /// Create a new topic with a generated UUID
@@ -193,6 +201,8 @@ class Topic {
     int? reviewCount,
     List<String>? tags,
     bool? isFavorite,
+    bool? useCustomSchedule,
+    DateTime? customReviewDatetime,
   }) {
     return Topic(
       id: id ?? this.id,
@@ -205,6 +215,8 @@ class Topic {
       reviewCount: reviewCount ?? this.reviewCount,
       tags: tags ?? this.tags,
       isFavorite: isFavorite ?? this.isFavorite,
+      useCustomSchedule: useCustomSchedule ?? this.useCustomSchedule,
+      customReviewDatetime: customReviewDatetime ?? this.customReviewDatetime,
     );
   }
 
@@ -221,6 +233,8 @@ class Topic {
       'reviewCount': reviewCount,
       'tags': tags,
       'isFavorite': isFavorite,
+      'useCustomSchedule': useCustomSchedule,
+      'customReviewDatetime': customReviewDatetime?.toIso8601String(),
     };
   }
 
@@ -239,6 +253,10 @@ class Topic {
       reviewCount: json['reviewCount'] as int? ?? 0,
       tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? [],
       isFavorite: json['isFavorite'] as bool? ?? false,
+      useCustomSchedule: json['useCustomSchedule'] as bool? ?? false,
+      customReviewDatetime: json['customReviewDatetime'] != null
+          ? DateTime.parse(json['customReviewDatetime'] as String)
+          : null,
     );
   }
 

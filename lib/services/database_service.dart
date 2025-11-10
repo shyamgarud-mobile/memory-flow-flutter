@@ -402,9 +402,8 @@ class DatabaseService {
       'review_count': topic.reviewCount,
       'tags': topic.tags.join(','), // Store tags as comma-separated string
       'is_favorite': topic.isFavorite ? 1 : 0,
-      // Future fields for custom scheduling
-      'use_custom_schedule': 0,
-      'custom_review_datetime': null,
+      'use_custom_schedule': topic.useCustomSchedule ? 1 : 0,
+      'custom_review_datetime': topic.customReviewDatetime?.millisecondsSinceEpoch,
       'reminder_time': null,
     };
   }
@@ -424,6 +423,10 @@ class DatabaseService {
       reviewCount: map['review_count'] as int,
       tags: _parseTags(map['tags'] as String?),
       isFavorite: (map['is_favorite'] as int) == 1,
+      useCustomSchedule: (map['use_custom_schedule'] as int?) == 1,
+      customReviewDatetime: map['custom_review_datetime'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['custom_review_datetime'] as int)
+          : null,
     );
   }
 
