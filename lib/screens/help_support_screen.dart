@@ -484,7 +484,7 @@ class HelpSupportScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'support@memoryflow.app',
+                  'shyamkumar.garud@gmail.com',
                   style: MemoryFlowDesign.body(context).copyWith(
                     color: MemoryFlowDesign.primaryBlue,
                     fontWeight: FontWeight.w500,

@@ -203,7 +203,7 @@ If we decide to implement analytics in the future:
 
 If you have any questions, concerns, or requests regarding this Privacy Policy or your data, please contact us:
 
-**Email**: support@memoryflow.app
+**Email**: shyamkumar.garud@gmail.com
 **App Version**: 1.0.0
 
 ---

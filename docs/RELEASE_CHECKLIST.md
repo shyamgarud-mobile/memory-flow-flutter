@@ -306,7 +306,7 @@ flutter build ios --release
 
 ## Pre-Launch
 
-- [ ] Create support email (support@memoryflow.app)
+- [ ] Create support email (shyamkumar.garud@gmail.com)
 - [ ] Set up crash reporting (Firebase Crashlytics)
 - [ ] Set up analytics (optional, privacy-focused)
 - [ ] Prepare social media announcements

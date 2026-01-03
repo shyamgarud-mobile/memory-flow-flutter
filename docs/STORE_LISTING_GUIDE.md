@@ -462,7 +462,7 @@ Current version: **1.0.0** (initial release)
 Create these before launch:
 1. **FAQ page** (on GitHub wiki or website)
 2. **Tutorial/Guide** (in-app or documentation)
-3. **Support email** (e.g., support@memoryflow.app)
+3. **Support email** (e.g., shyamkumar.garud@gmail.com)
 4. **GitHub Issues** (for bug reports and feature requests)
 
 ---

@@ -150,7 +150,7 @@ We will notify you of any changes by posting the new Privacy Policy in the app a
 
 If you have questions or concerns:
 
-**Email**: support@memoryflow.app
+**Email**: shyamkumar.garud@gmail.com
 **App Version**: ${AppConfig.appVersion}
 
 ---
