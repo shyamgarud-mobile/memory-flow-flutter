@@ -255,6 +255,9 @@ class ThemeHelper {
   /// Extra large vertical spacing
   static Widget get vSpaceXL => const SizedBox(height: AppSpacing.xl);
 
+  /// Extra large vertical spacing (alias)
+  static Widget get vSpaceXLarge => const SizedBox(height: AppSpacing.xl);
+
   /// Small horizontal spacing
   static Widget get hSpaceSmall => const SizedBox(width: AppSpacing.sm);
 

@@ -46,6 +46,9 @@ class Topic {
   /// Custom review datetime (only used if useCustomSchedule is true)
   final DateTime? customReviewDatetime;
 
+  /// Folder ID this topic belongs to (null for root-level topics)
+  final String? folderId;
+
   /// UUID generator instance
   static const _uuid = Uuid();
 
@@ -62,6 +65,7 @@ class Topic {
     this.isFavorite = false,
     this.useCustomSchedule = false,
     this.customReviewDatetime,
+    this.folderId,
   });
 
   /// Create a new topic with a generated UUID
@@ -76,6 +80,7 @@ class Topic {
     required String filePath,
     List<String> tags = const [],
     bool isFavorite = false,
+    String? folderId,
   }) {
     final now = DateTime.now();
     return Topic(
@@ -89,6 +94,7 @@ class Topic {
       reviewCount: 0,
       tags: tags,
       isFavorite: isFavorite,
+      folderId: folderId,
     );
   }
 
@@ -203,6 +209,7 @@ class Topic {
     bool? isFavorite,
     bool? useCustomSchedule,
     DateTime? customReviewDatetime,
+    String? folderId,
   }) {
     return Topic(
       id: id ?? this.id,
@@ -217,6 +224,7 @@ class Topic {
       isFavorite: isFavorite ?? this.isFavorite,
       useCustomSchedule: useCustomSchedule ?? this.useCustomSchedule,
       customReviewDatetime: customReviewDatetime ?? this.customReviewDatetime,
+      folderId: folderId ?? this.folderId,
     );
   }
 
@@ -235,6 +243,7 @@ class Topic {
       'isFavorite': isFavorite,
       'useCustomSchedule': useCustomSchedule,
       'customReviewDatetime': customReviewDatetime?.toIso8601String(),
+      'folderId': folderId,
     };
   }
 
@@ -257,6 +266,7 @@ class Topic {
       customReviewDatetime: json['customReviewDatetime'] != null
           ? DateTime.parse(json['customReviewDatetime'] as String)
           : null,
+      folderId: json['folderId'] as String?,
     );
   }
 

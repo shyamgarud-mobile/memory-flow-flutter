@@ -1,0 +1,426 @@
+{
+  "analysis_metadata": {
+    "app_name": "MemoryFlow",
+    "figma_source": "Mobile Apps – Prototyping Kit (Community)",
+    "analysis_date": "2026-01-01",
+    "matching_level": "component-level",
+    "analysis_type": "design_system_comparison"
+  },
+
+  "design_system_comparison": {
+    "colors": {
+      "figma": {
+        "primary": "#007AFF",
+        "background": "#F5F9FC",
+        "text_primary": "#000000",
+        "text_secondary": "#8E8E93",
+        "surface": "#FFFFFF",
+        "divider": "#E5E5EA"
+      },
+      "memoryflow": {
+        "primary": "#4A9FD8",
+        "secondary": "#4A7DBF",
+        "background_light": "#F0F8FF",
+        "text_primary": "#111827",
+        "text_secondary": "#6B7280",
+        "surface": "#FFFFFF"
+      },
+      "differences": [
+        "MemoryFlow uses cyan-blue (#4A9FD8) vs Figma's bright blue (#007AFF)",
+        "MemoryFlow has gradient-inspired background (#F0F8FF) vs Figma's neutral gray (#F5F9FC)",
+        "MemoryFlow includes secondary color (#4A7DBF) for gradients",
+        "MemoryFlow has comprehensive semantic colors (success, warning, error)"
+      ],
+      "match_score": "70%",
+      "recommendation": "Consider offering Figma blue as an additional color scheme option"
+    },
+
+    "typography": {
+      "figma": {
+        "font_family": "SF Pro / Roboto",
+        "heading_large": "28-32px, bold",
+        "heading_medium": "20-24px, semibold",
+        "body": "14-16px, regular",
+        "caption": "12px, regular"
+      },
+      "memoryflow": {
+        "font_family": "System default (Roboto on Android, SF Pro on iOS)",
+        "display": "32px, bold",
+        "heading_1": "24px, bold",
+        "heading_2": "20px, bold",
+        "body_large": "16px, regular",
+        "body": "14px, regular",
+        "caption": "12px, regular"
+      },
+      "differences": [
+        "MemoryFlow has more granular hierarchy (7 levels vs Figma's 4)",
+        "Font sizes are very similar",
+        "MemoryFlow uses letter-spacing for labels (-0.3 to 0.5)"
+      ],
+      "match_score": "85%",
+      "recommendation": "Typography is well-aligned, keep current system"
+    },
+
+    "spacing": {
+      "figma": {
+        "grid_system": "8px base",
+        "common_values": [8, 12, 16, 24, 32]
+      },
+      "memoryflow": {
+        "grid_system": "4px/8px base",
+        "values": {
+          "xs": 4,
+          "sm": 8,
+          "md": 16,
+          "lg": 24,
+          "xl": 32,
+          "xxl": 48,
+          "xxxl": 64
+        }
+      },
+      "differences": [
+        "MemoryFlow has xs:4px for tighter spacing",
+        "MemoryFlow extends to xxxl:64px for larger sections",
+        "Both follow 8px grid principle"
+      ],
+      "match_score": "95%",
+      "recommendation": "Spacing system is excellent, no changes needed"
+    },
+
+    "border_radius": {
+      "figma": {
+        "cards": "8-12px",
+        "buttons": "20-24px (pill-shaped)",
+        "inputs": "8-10px",
+        "modals": "16-20px (top corners)"
+      },
+      "memoryflow": {
+        "sm": "4px",
+        "md": "8px",
+        "lg": "12px",
+        "xl": "16px",
+        "xxl": "24px",
+        "round": "9999px"
+      },
+      "differences": [
+        "Figma uses more rounded buttons (20-24px)",
+        "MemoryFlow's buttons use md:8px (less rounded)",
+        "Both support pill-shaped with round/9999px"
+      ],
+      "match_score": "75%",
+      "recommendation": "Consider increasing button border radius to 20-24px for modern iOS feel"
+    },
+
+    "shadows": {
+      "figma": {
+        "card_shadow": "0 2px 8px rgba(0,0,0,0.08)",
+        "elevated_shadow": "0 4px 16px rgba(0,0,0,0.12)",
+        "modal_shadow": "0 8px 24px rgba(0,0,0,0.16)"
+      },
+      "memoryflow": {
+        "small": "0 2px 4px rgba(0,0,0,0.08-0.3)",
+        "medium": "0 4px 8px rgba(0,0,0,0.1-0.4)",
+        "large": "0 8px 16px rgba(0,0,0,0.15-0.5)"
+      },
+      "differences": [
+        "MemoryFlow has darker shadows in dark mode (0.3-0.5 opacity)",
+        "Blur radius is smaller in MemoryFlow (4,8,16 vs 8,16,24)",
+        "Y-offset is the same (2,4,8)"
+      ],
+      "match_score": "80%",
+      "recommendation": "Consider softer shadows with larger blur radius for modern look"
+    }
+  },
+
+  "component_comparison": {
+    "buttons": {
+      "figma_patterns": [
+        "Primary: Solid blue, white text, 48-56px height, 20-24px radius",
+        "Secondary: Outlined, blue border, blue text",
+        "Text buttons: No background, blue text",
+        "Full-width on mobile"
+      ],
+      "memoryflow_implementation": [
+        "ElevatedButton: Primary color, white text, minimum 48px height",
+        "OutlinedButton: Border with primary color",
+        "TextButton: No background",
+        "Uses 8px border radius (less rounded than Figma)"
+      ],
+      "match_score": "80%",
+      "differences": [
+        "Border radius: 8px vs 20-24px",
+        "Height: 48px vs 48-56px (similar)"
+      ],
+      "recommendation": "Increase button border radius to match modern iOS aesthetic"
+    },
+
+    "cards": {
+      "figma_patterns": [
+        "White background with subtle shadow",
+        "12px border radius",
+        "16-20px padding",
+        "Dividers between list items"
+      ],
+      "memoryflow_implementation": [
+        "Card widget with 12px radius",
+        "16px padding (AppSpacing.md)",
+        "Shadow: 0 2px 4px rgba(0,0,0,0.08)",
+        "Supports gradient and outlined variants"
+      ],
+      "match_score": "90%",
+      "differences": [
+        "MemoryFlow has more card variants (gradient, elevated, outlined)",
+        "Very similar padding and radius"
+      ],
+      "recommendation": "Current card system is excellent, add more variants as needed"
+    },
+
+    "inputs": {
+      "figma_patterns": [
+        "Outlined with gray border",
+        "8-10px border radius",
+        "48-56px height",
+        "Label above input",
+        "Helper text below"
+      ],
+      "memoryflow_implementation": "Uses Flutter's default TextField/TextFormField with theme customization",
+      "match_score": "70%",
+      "recommendation": "Create custom branded input component with consistent styling"
+    },
+
+    "lists": {
+      "figma_patterns": [
+        "ListTile pattern with icon, title, subtitle",
+        "Dividers between items",
+        "Chevron right for navigation",
+        "Switches/toggles on the right"
+      ],
+      "memoryflow_implementation": [
+        "Uses Flutter ListTile",
+        "Icon in colored container on left",
+        "Title/subtitle text",
+        "Trailing widgets (switches, chevrons)",
+        "Dividers between items"
+      ],
+      "match_score": "95%",
+      "differences": "Nearly identical implementation",
+      "recommendation": "Current list implementation matches Figma well"
+    },
+
+    "navigation": {
+      "figma_patterns": [
+        "Bottom navigation bar with 4-5 items",
+        "Icons with labels",
+        "Active state with blue color",
+        "Top app bar with back button and title"
+      ],
+      "memoryflow_implementation": [
+        "Bottom navigation with Home, Topics, Calendar, Settings",
+        "Icons only (no labels)",
+        "Active state with primary color",
+        "AppBar with elevation and actions"
+      ],
+      "match_score": "85%",
+      "differences": [
+        "Figma shows labels under icons",
+        "MemoryFlow uses icons only"
+      ],
+      "recommendation": "Consider adding labels below navigation icons for clarity"
+    },
+
+    "modals_bottomsheets": {
+      "figma_patterns": [
+        "Bottom sheet with rounded top corners (16-24px)",
+        "Handle bar at top",
+        "White background",
+        "Padding 20-24px"
+      ],
+      "memoryflow_implementation": "Uses Flutter's showModalBottomSheet with default styling",
+      "match_score": "60%",
+      "recommendation": "Create custom bottom sheet component with handle bar and branded styling"
+    }
+  },
+
+  "screens_comparison": {
+    "onboarding": {
+      "figma_has": [
+        "Illustration/image at top",
+        "Title and description",
+        "Pagination dots",
+        "Skip button",
+        "Next/Get Started button"
+      ],
+      "memoryflow_has": [
+        "App icon/illustration",
+        "Title and description",
+        "Benefit items with icons",
+        "Skip and Get Started buttons"
+      ],
+      "match_score": "85%",
+      "differences": [
+        "MemoryFlow missing pagination dots (single screen vs multi-screen)",
+        "MemoryFlow has benefit list instead of single illustration"
+      ]
+    },
+
+    "settings": {
+      "figma_has": [
+        "Grouped sections with headers",
+        "List items with icons",
+        "Switches for toggles",
+        "Chevrons for navigation",
+        "Profile section at top"
+      ],
+      "memoryflow_has": [
+        "Grouped sections with UPPERCASE headers",
+        "List items with icons in colored containers",
+        "Switches and buttons",
+        "Chevrons for navigation",
+        "No profile section (has Google Drive section)"
+      ],
+      "match_score": "90%",
+      "differences": [
+        "MemoryFlow has more visual polish with colored icon containers",
+        "Section headers are styled differently"
+      ]
+    },
+
+    "list_screens": {
+      "figma_has": [
+        "Search bar at top",
+        "Filter buttons",
+        "List items with image/icon",
+        "Empty states with illustrations"
+      ],
+      "memoryflow_has": [
+        "Topics list with status badges",
+        "Filter by status/date",
+        "Folder organization",
+        "Custom empty states"
+      ],
+      "match_score": "75%",
+      "differences": [
+        "MemoryFlow is more specialized for spaced repetition",
+        "Figma is more generic list pattern"
+      ]
+    },
+
+    "calendar": {
+      "figma_has": [
+        "Month view with date grid",
+        "Event dots under dates",
+        "Date picker modal",
+        "Time selection"
+      ],
+      "memoryflow_has": [
+        "TableCalendar widget",
+        "Topics scheduled by date",
+        "Status indicators",
+        "Due date highlighting"
+      ],
+      "match_score": "80%",
+      "differences": "Both implement standard calendar patterns well"
+    }
+  },
+
+  "matching_criteria": {
+    "pixel_perfect": false,
+    "component_level": true,
+    "style_level": true,
+    "philosophy": "MemoryFlow follows modern Material/iOS design patterns similar to Figma kit, but with custom branding"
+  },
+
+  "overall_assessment": {
+    "design_system_match": "82%",
+    "component_match": "83%",
+    "screen_pattern_match": "81%",
+    "overall_match": "82%",
+
+    "strengths": [
+      "Comprehensive design system with excellent spacing and typography",
+      "Well-implemented component library with variants",
+      "Consistent use of branded colors throughout",
+      "Good accessibility with semantic colors",
+      "Multiple color scheme options",
+      "Gradient support for visual interest"
+    ],
+
+    "areas_for_improvement": [
+      "Button border radius could be more rounded (20-24px) for modern feel",
+      "Add navigation labels below icons",
+      "Create custom input component for consistency",
+      "Implement branded bottom sheet with handle bar",
+      "Consider softer shadows with larger blur radius",
+      "Add Figma-blue (#007AFF) as a color scheme option"
+    ],
+
+    "unique_features_in_memoryflow": [
+      "Spaced repetition specific components (stage indicators, review scheduling)",
+      "Google Drive integration UI",
+      "Analytics and gamification widgets",
+      "Folder organization system",
+      "Custom review calendar",
+      "Multiple theme support (4 color schemes)",
+      "Design system showcase screen"
+    ],
+
+    "recommended_actions": [
+      {
+        "priority": "high",
+        "action": "Update button border radius to 20-24px",
+        "impact": "Makes UI feel more modern and iOS-native"
+      },
+      {
+        "priority": "high",
+        "action": "Add labels to bottom navigation",
+        "impact": "Improves usability and matches Figma pattern"
+      },
+      {
+        "priority": "medium",
+        "action": "Create custom TextInput component",
+        "impact": "Ensures consistent input styling across app"
+      },
+      {
+        "priority": "medium",
+        "action": "Implement custom BottomSheet with handle bar",
+        "impact": "Better UX for modal interactions"
+      },
+      {
+        "priority": "low",
+        "action": "Soften shadows (increase blur radius)",
+        "impact": "Slightly more modern aesthetic"
+      },
+      {
+        "priority": "low",
+        "action": "Add 'iOS Blue' color scheme option",
+        "impact": "Gives users Figma-like color option"
+      }
+    ]
+  },
+
+  "figma_components_not_in_app": [
+    "Chat/messaging interface",
+    "Star rating component",
+    "Shopping cart/e-commerce components",
+    "Map integration",
+    "Image carousel",
+    "Video player",
+    "Social sharing buttons",
+    "Comment threads"
+  ],
+
+  "app_components_not_in_figma": [
+    "Spaced repetition stage indicators",
+    "Review scheduling calendar",
+    "Progress rings and heatmaps",
+    "XP and streak widgets",
+    "Folder management UI",
+    "Google Drive sync UI",
+    "Markdown reader",
+    "Topic detail with review buttons",
+    "Analytics dashboard",
+    "Gamification achievements"
+  ],
+
+  "conclusion": "MemoryFlow has an 82% design match with the Figma prototyping kit, showing strong alignment with modern mobile design patterns. The app has a well-thought-out design system that rivals the Figma kit in many areas. Key improvements would be minor UI polish (rounded buttons, navigation labels) rather than major redesigns. The app's unique features for spaced repetition learning are well-designed and go beyond what the generic Figma kit offers."
+}

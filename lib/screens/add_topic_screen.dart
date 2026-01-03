@@ -4,13 +4,18 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../constants/app_constants.dart';
 import '../models/topic.dart';
+import '../models/folder.dart';
 import '../services/file_service.dart';
 import '../services/topics_index_service.dart';
 import '../services/notification_service.dart';
+import '../services/folder_service.dart';
 import '../utils/markdown_helper.dart';
 import '../utils/theme_helper.dart';
 import '../widgets/common/markdown_toolbar.dart';
 import '../widgets/common/custom_button.dart';
+import '../widgets/common/figma_button.dart';
+import '../widgets/common/figma_text_field.dart';
+import '../widgets/common/figma_dialog.dart';
 import '../widgets/pickers/custom_date_time_picker.dart';
 import '../providers/navigation_provider.dart';
 
@@ -29,6 +34,7 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
   final _fileService = FileService();
   final _topicsIndexService = TopicsIndexService();
   final _notificationService = NotificationService();
+  final _folderService = FolderService();
 
   bool _isPreviewMode = false;
   bool _isSaving = false;
@@ -42,10 +48,23 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
 
   bool _showScheduleSection = false; // Toggle for scheduling section
 
+  // Folder selection
+  String? _selectedFolderId;
+  String? _selectedFolderName;
+  List<Folder> _allFolders = [];
+
   @override
   void initState() {
     super.initState();
     _contentController.addListener(_updateCounts);
+    _loadFolders();
+  }
+
+  Future<void> _loadFolders() async {
+    final folders = await _folderService.loadAllFolders();
+    setState(() {
+      _allFolders = folders;
+    });
   }
 
   @override
@@ -74,34 +93,31 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Insert Link'),
+      builder: (context) => FigmaDialog(
+        title: 'Insert Link',
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Link Text',
-                hintText: 'Example Link',
-              ),
+            FigmaTextField(
+              label: 'Link Text',
+              hintText: 'Example Link',
               onChanged: (value) => linkText = value,
             ),
             ThemeHelper.vSpaceMedium,
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'URL',
-                hintText: 'https://example.com',
-              ),
+            FigmaTextField(
+              label: 'URL',
+              hintText: 'https://example.com',
+              keyboardType: TextInputType.url,
               onChanged: (value) => linkUrl = value,
             ),
           ],
         ),
         actions: [
-          CustomButton.text(
+          FigmaTextButton(
             text: 'Cancel',
             onPressed: () => Navigator.pop(context),
           ),
-          CustomButton.primary(
+          FigmaButton(
             text: 'Insert',
             onPressed: () {
               MarkdownHelper.insertLink(
@@ -169,6 +185,7 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
       final topic = Topic.create(
         title: _titleController.text.trim(),
         filePath: 'topics/placeholder.md', // Will be updated with actual path
+        folderId: _selectedFolderId,
       ).copyWith(
         nextReviewDate: firstReviewDate,
         useCustomSchedule: useCustomSchedule,
@@ -223,6 +240,8 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
           _scheduleType = 'auto';
           _customScheduleDateTime = null;
           _showScheduleSection = false;
+          _selectedFolderId = null;
+          _selectedFolderName = null;
         });
 
         // Navigate back to home screen (index 0)
@@ -277,6 +296,9 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
             // Title field
             _buildTitleField(),
 
+            // Folder selector
+            _buildFolderSelector(),
+
             // Stats bar
             _buildStatsBar(),
 
@@ -322,20 +344,17 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
   }
 
   Widget _buildTitleField() {
-    return Container(
+    return Padding(
       padding: ThemeHelper.customPadding(
         horizontal: AppSpacing.md,
         top: AppSpacing.md,
         bottom: AppSpacing.sm,
       ),
-      child: TextFormField(
+      child: FigmaTextField(
         controller: _titleController,
-        decoration: const InputDecoration(
-          hintText: 'Topic Title',
-          prefixIcon: Icon(Icons.title_rounded),
-          border: OutlineInputBorder(),
-        ),
-        style: Theme.of(context).textTheme.titleLarge,
+        label: 'Topic Title',
+        hintText: 'Enter topic title',
+        prefixIcon: Icons.title_rounded,
         textCapitalization: TextCapitalization.words,
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
@@ -348,6 +367,174 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
         },
       ),
     );
+  }
+
+  Widget _buildFolderSelector() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: InkWell(
+        onTap: _showFolderPicker,
+        borderRadius: ThemeHelper.standardRadius,
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.gray700
+                  : AppColors.gray300,
+            ),
+            borderRadius: ThemeHelper.standardRadius,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.folder_rounded,
+                color: _selectedFolderId != null
+                    ? AppColors.primary
+                    : Theme.of(context).textTheme.bodySmall?.color,
+                size: 20,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  _selectedFolderName ?? 'No folder (root level)',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: _selectedFolderId != null
+                            ? null
+                            : Theme.of(context).textTheme.bodySmall?.color,
+                      ),
+                ),
+              ),
+              Icon(
+                Icons.arrow_drop_down,
+                color: Theme.of(context).textTheme.bodySmall?.color,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showFolderPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.gray700
+                        : AppColors.gray300,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.folder_rounded),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'Select Folder',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+
+            // Folder list
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                children: [
+                  // No folder option
+                  ListTile(
+                    leading: Icon(
+                      Icons.folder_off_rounded,
+                      color: _selectedFolderId == null
+                          ? AppColors.primary
+                          : Theme.of(context).textTheme.bodySmall?.color,
+                    ),
+                    title: const Text('No folder (root level)'),
+                    trailing: _selectedFolderId == null
+                        ? const Icon(Icons.check, color: AppColors.primary)
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        _selectedFolderId = null;
+                        _selectedFolderName = null;
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const Divider(),
+
+                  // Folders
+                  ..._buildFolderList(_allFolders, null, 0),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildFolderList(List<Folder> folders, String? parentId, int depth) {
+    final widgets = <Widget>[];
+    final childFolders = folders.where((f) => f.parentId == parentId).toList();
+
+    for (final folder in childFolders) {
+      widgets.add(
+        ListTile(
+          contentPadding: EdgeInsets.only(
+            left: AppSpacing.md + (depth * 24.0),
+            right: AppSpacing.md,
+          ),
+          leading: Icon(
+            Icons.folder_rounded,
+            color: _selectedFolderId == folder.id
+                ? AppColors.primary
+                : Theme.of(context).textTheme.bodySmall?.color,
+          ),
+          title: Text(folder.name),
+          trailing: _selectedFolderId == folder.id
+              ? const Icon(Icons.check, color: AppColors.primary)
+              : null,
+          onTap: () {
+            setState(() {
+              _selectedFolderId = folder.id;
+              _selectedFolderName = folder.name;
+            });
+            Navigator.pop(context);
+          },
+        ),
+      );
+
+      // Add children recursively
+      widgets.addAll(_buildFolderList(folders, folder.id, depth + 1));
+    }
+
+    return widgets;
   }
 
   Widget _buildStatsBar() {
@@ -629,26 +816,11 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
           ),
           ThemeHelper.vSpaceMedium,
 
-          OutlinedButton.icon(
+          FigmaOutlinedButton(
+            text: 'Change Time: ${_reminderTime.format(context)}',
+            icon: Icons.access_time,
             onPressed: _handleChangeReminderTime,
-            icon: const Icon(Icons.access_time, size: 20),
-            label: Text(
-              'Change Time: ${_reminderTime.format(context)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.md,
-              ),
-              side: BorderSide(
-                color: AppColors.primary,
-                width: 2,
-              ),
-            ),
+            fullWidth: true,
           ),
         ],
       ),
@@ -800,8 +972,8 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
   void _showMarkdownHelp() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Markdown Syntax'),
+      builder: (context) => FigmaDialog(
+        title: 'Markdown Syntax',
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -821,7 +993,7 @@ class _AddTopicScreenState extends State<AddTopicScreen> {
           ),
         ),
         actions: [
-          CustomButton.primary(
+          FigmaButton(
             text: 'Got it',
             onPressed: () => Navigator.pop(context),
           ),

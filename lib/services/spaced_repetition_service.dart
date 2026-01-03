@@ -1,5 +1,6 @@
 import '../models/topic.dart';
 import 'database_service.dart';
+import 'notification_service.dart';
 
 /// Service for managing spaced repetition scheduling
 ///
@@ -183,7 +184,9 @@ class SpacedRepetitionService {
       final nextStage = topic.currentStage + 1;
 
       // Calculate next review date based on new stage
-      final nextReviewDate = calculateNextReviewDate(nextStage, now);
+      // Use 9:00 AM as the default notification time
+      final baseDate = DateTime(now.year, now.month, now.day, 9, 0);
+      final nextReviewDate = calculateNextReviewDate(nextStage, baseDate);
 
       // Create updated topic
       final updatedTopic = topic.copyWith(
@@ -200,6 +203,16 @@ class SpacedRepetitionService {
 
       if (result <= 0) {
         throw Exception('Failed to update topic in database');
+      }
+
+      // Schedule notification for next review
+      try {
+        final notificationService = NotificationService();
+        await notificationService.scheduleTopicReminder(topicId, nextReviewDate);
+        print('✓ Notification scheduled for next review');
+      } catch (e) {
+        print('⚠ Failed to schedule notification: $e');
+        // Don't fail the operation if notification scheduling fails
       }
 
       print('✓ Topic advanced to stage $nextStage');
@@ -278,6 +291,15 @@ class SpacedRepetitionService {
 
       if (result <= 0) {
         throw Exception('Failed to update topic in database');
+      }
+
+      // Schedule notification for tomorrow
+      try {
+        final notificationService = NotificationService();
+        await notificationService.scheduleTopicReminder(topicId, tomorrow);
+        print('✓ Notification scheduled for tomorrow');
+      } catch (e) {
+        print('⚠ Failed to schedule notification: $e');
       }
 
       print('✓ Reset to stage 0');
@@ -586,6 +608,15 @@ class SpacedRepetitionService {
       );
 
       await _db.updateTopic(updated);
+
+      // Schedule notification for the new date
+      try {
+        final notificationService = NotificationService();
+        await notificationService.scheduleTopicReminder(topicId, newDateTime);
+        print('✓ Notification scheduled for new date');
+      } catch (e) {
+        print('⚠ Failed to schedule notification: $e');
+      }
 
       print('✓ Topic rescheduled successfully');
       print('=========================\n');

@@ -1,4 +1,4 @@
-package com.example.memory_flow
+package com.garud.shyamkumar.memoryflow
 
 import io.flutter.embedding.android.FlutterActivity
 

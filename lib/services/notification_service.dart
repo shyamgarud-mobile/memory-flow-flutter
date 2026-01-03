@@ -71,11 +71,54 @@ class NotificationService {
       // Initialize timezone database
       tz.initializeTimeZones();
 
+      // Set the local timezone based on device offset
+      // Android often returns abbreviations like "IST" which aren't valid IANA names
+      final now = DateTime.now();
+      final offset = now.timeZoneOffset;
+
+      // Find a timezone location that matches the current offset
+      tz.Location? localLocation;
+      try {
+        // Try common timezone names based on offset
+        final offsetHours = offset.inHours;
+        final offsetMinutes = offset.inMinutes % 60;
+
+        // Map common offsets to IANA timezone names
+        final timezoneMap = <int, String>{
+          330: 'Asia/Kolkata',     // IST (UTC+5:30)
+          0: 'UTC',                // UTC
+          60: 'Europe/London',     // GMT+1
+          -300: 'America/New_York', // EST (UTC-5)
+          -360: 'America/Chicago',  // CST (UTC-6)
+          -420: 'America/Denver',   // MST (UTC-7)
+          -480: 'America/Los_Angeles', // PST (UTC-8)
+          480: 'Asia/Singapore',   // SGT (UTC+8)
+          540: 'Asia/Tokyo',       // JST (UTC+9)
+        };
+
+        final offsetInMinutes = offsetHours * 60 + offsetMinutes;
+        final timezoneName = timezoneMap[offsetInMinutes];
+
+        if (timezoneName != null) {
+          localLocation = tz.getLocation(timezoneName);
+        } else {
+          // Fallback: use UTC and adjust
+          localLocation = tz.UTC;
+        }
+
+        tz.setLocalLocation(localLocation);
+        print('✓ Timezone set to: ${localLocation.name}');
+      } catch (e) {
+        // Fallback to UTC
+        print('⚠ Could not set timezone, using UTC: $e');
+        tz.setLocalLocation(tz.UTC);
+      }
+
       // Android initialization settings
       const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
 
       // iOS initialization settings
-      const iosSettings = DarwinInitializationSettings(
+      final iosSettings = DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,
         requestSoundPermission: true,

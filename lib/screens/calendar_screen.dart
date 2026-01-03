@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../models/topic.dart';
 import '../services/topics_index_service.dart';
 import '../services/spaced_repetition_service.dart';
 import '../utils/theme_helper.dart';
+import '../widgets/common/figma_app_bar.dart';
 import 'topic_detail_screen.dart';
+
+/// Key for storing calendar view preference
+const String _calendarFormatKey = 'calendar_format';
 
 /// Calendar screen showing review schedule
 ///
@@ -36,7 +41,31 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   void initState() {
     super.initState();
+    _loadCalendarFormat();
     _loadTopics();
+  }
+
+  /// Load saved calendar format preference
+  Future<void> _loadCalendarFormat() async {
+    final prefs = await SharedPreferences.getInstance();
+    final formatString = prefs.getString(_calendarFormatKey);
+
+    if (formatString != null) {
+      setState(() {
+        _calendarFormat = formatString == 'week'
+            ? CalendarFormat.week
+            : CalendarFormat.month;
+      });
+    }
+  }
+
+  /// Save calendar format preference
+  Future<void> _saveCalendarFormat(CalendarFormat format) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _calendarFormatKey,
+      format == CalendarFormat.week ? 'week' : 'month',
+    );
   }
 
   /// Load all topics and organize by review date
@@ -110,10 +139,51 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Review Calendar'),
-        elevation: 0,
+      appBar: FigmaAppBar(
+        title: 'Review Calendar',
+        showBackButton: false,
+        actions: [
+          // View toggle buttons
+          Container(
+            margin: const EdgeInsets.only(right: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.gray800 : AppColors.gray200,
+              borderRadius: BorderRadius.circular(AppBorderRadius.md),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildViewToggleButton(
+                  icon: Icons.view_week,
+                  label: 'Week',
+                  isSelected: _calendarFormat == CalendarFormat.week,
+                  isDark: isDark,
+                  onTap: () {
+                    setState(() {
+                      _calendarFormat = CalendarFormat.week;
+                    });
+                    _saveCalendarFormat(CalendarFormat.week);
+                  },
+                ),
+                _buildViewToggleButton(
+                  icon: Icons.calendar_view_month,
+                  label: 'Month',
+                  isSelected: _calendarFormat == CalendarFormat.month,
+                  isDark: isDark,
+                  onTap: () {
+                    setState(() {
+                      _calendarFormat = CalendarFormat.month;
+                    });
+                    _saveCalendarFormat(CalendarFormat.month);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -133,6 +203,55 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
               ],
             ),
+    );
+  }
+
+  /// Build view toggle button (Figma-styled)
+  Widget _buildViewToggleButton({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppBorderRadius.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppBorderRadius.md),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected
+                  ? AppColors.white
+                  : (isDark ? AppColors.gray400 : AppColors.gray600),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected
+                    ? AppColors.white
+                    : (isDark ? AppColors.gray400 : AppColors.gray600),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -177,10 +177,35 @@ class TopicsIndexService {
   /// Returns: Total number of topics
   Future<int> getTopicsCount() async {
     try {
-      final topics = await loadTopicsIndex();
-      return topics.length;
+      return await _db.getTopicsCount();
     } catch (e) {
       return 0;
+    }
+  }
+
+  /// Load topics with pagination for efficient list loading
+  ///
+  /// Parameters:
+  ///   - limit: Maximum number of topics to load (default 20)
+  ///   - offset: Number of topics to skip (for pagination)
+  ///
+  /// Returns: List of Topic objects
+  Future<List<Topic>> loadTopicsIndexPaginated({
+    required int limit,
+    required int offset,
+  }) async {
+    try {
+      final topics = await _db.getTopicsPaginated(
+        limit: limit,
+        offset: offset,
+        orderBy: 'next_review_date',
+        ascending: true,
+      );
+      print('Loaded ${topics.length} topics (offset: $offset, limit: $limit)');
+      return topics;
+    } catch (e) {
+      print('Error loading paginated topics: $e');
+      throw Exception('Failed to load topics from database: $e');
     }
   }
 

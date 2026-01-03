@@ -1,19 +1,108 @@
 import 'package:flutter/material.dart';
 
+/// Color scheme option for the app
+enum AppColorScheme {
+  modernProfessional,
+  calmTrustworthy,
+  techCorporate,
+  gradientModern,
+  figmaIOS,
+}
+
+/// Color scheme data containing all colors for a theme
+class ColorSchemeData {
+  final String name;
+  final Color primary;
+  final Color secondary;
+  final Color accent;
+  final Color background;
+  final Color surface;
+
+  const ColorSchemeData({
+    required this.name,
+    required this.primary,
+    required this.secondary,
+    required this.accent,
+    required this.background,
+    this.surface = const Color(0xFFF4F5F7),
+  });
+}
+
+/// Predefined color schemes
+class AppColorSchemes {
+  static const ColorSchemeData modernProfessional = ColorSchemeData(
+    name: 'Modern Professional',
+    primary: Color(0xFF1E88E5), // vibrant blue
+    secondary: Color(0xFF64B5F6), // light blue
+    accent: Color(0xFF0D47A1), // deep blue
+    background: Color(0xFFF5F9FC), // very light blue-gray
+  );
+
+  static const ColorSchemeData calmTrustworthy = ColorSchemeData(
+    name: 'Calm & Trustworthy',
+    primary: Color(0xFF2196F3), // material blue
+    secondary: Color(0xFF90CAF9), // soft sky blue
+    accent: Color(0xFF1565C0), // dark blue
+    background: Color(0xFFFAFAFA), // off-white
+  );
+
+  static const ColorSchemeData techCorporate = ColorSchemeData(
+    name: 'Tech/Corporate',
+    primary: Color(0xFF0052CC), // Atlassian blue
+    secondary: Color(0xFF4C9AFF), // bright blue
+    accent: Color(0xFF00875A), // teal-green for CTAs
+    background: Color(0xFFFFFFFF),
+    surface: Color(0xFFF4F5F7),
+  );
+
+  static const ColorSchemeData gradientModern = ColorSchemeData(
+    name: 'Gradient Modern',
+    primary: Color(0xFF667EEA), // purple-blue
+    secondary: Color(0xFF764BA2), // deep purple
+    accent: Color(0xFFA8C0FF), // light periwinkle
+    background: Color(0xFFFFFFFF),
+  );
+
+  static const ColorSchemeData figmaIOS = ColorSchemeData(
+    name: 'Figma iOS',
+    primary: Color(0xFF007AFF), // iOS blue
+    secondary: Color(0xFF5AC8FA), // light blue
+    accent: Color(0xFFFF9500), // orange
+    background: Color(0xFFF5F9FC), // neutral gray-blue
+    surface: Color(0xFFFFFFFF),
+  );
+
+  /// Get color scheme data by enum
+  static ColorSchemeData getScheme(AppColorScheme scheme) {
+    switch (scheme) {
+      case AppColorScheme.modernProfessional:
+        return modernProfessional;
+      case AppColorScheme.calmTrustworthy:
+        return calmTrustworthy;
+      case AppColorScheme.techCorporate:
+        return techCorporate;
+      case AppColorScheme.gradientModern:
+        return gradientModern;
+      case AppColorScheme.figmaIOS:
+        return figmaIOS;
+    }
+  }
+}
+
 /// App-wide color constants
 class AppColors {
-  // Brand Colors
-  static const Color primary = Color(0xFF6366F1); // Indigo
-  static const Color secondary = Color(0xFF8B5CF6); // Purple
+  // Brand Colors - App Icon Gradient Theme 🎨
+  static const Color primary = Color(0xFF4A9FD8); // Cyan (from icon gradient start)
+  static const Color secondary = Color(0xFF4A7DBF); // Royal blue (from icon gradient end)
   static const Color success = Color(0xFF10B981); // Green
-  static const Color warning = Color(0xFFF59E0B); // Orange
+  static const Color warning = Color(0xFFF59E0B); // Amber
   static const Color danger = Color(0xFFEF4444); // Red
   static const Color error = danger; // Alias for danger
   static const Color textSecondary = gray500; // Text secondary color
 
-  // Light Theme Colors
-  static const Color backgroundLight = Color(0xFFFFFFFF);
-  static const Color surfaceLight = Color(0xFFF9FAFB);
+  // Light Theme Colors - Gradient inspired
+  static const Color backgroundLight = Color(0xFFF0F8FF); // Alice blue (very light cyan)
+  static const Color surfaceLight = Color(0xFFFFFFFF); // White
   static const Color textPrimaryLight = Color(0xFF111827);
   static const Color textSecondaryLight = Color(0xFF6B7280);
 
@@ -139,6 +228,13 @@ class AppSpacing {
   static const double xl = 32.0;
   static const double xxl = 48.0;
   static const double xxxl = 64.0;
+
+  // Figma-specific component heights
+  static const double buttonHeight = 56.0; // Standard button height
+  static const double inputHeight = 56.0; // Standard input height
+  static const double listItemHeight = 72.0; // Minimum list item height
+  static const double navBarHeight = 80.0; // Bottom navigation bar height
+  static const double appBarHeight = 56.0; // Top app bar height
 }
 
 /// Border radius values
@@ -149,6 +245,13 @@ class AppBorderRadius {
   static const double xl = 16.0;
   static const double xxl = 24.0;
   static const double round = 9999.0;
+
+  // Figma-specific radius values
+  static const double button = 24.0; // Pill-shaped buttons
+  static const double card = 12.0; // Standard card radius
+  static const double input = 12.0; // Input field radius
+  static const double bottomSheet = 20.0; // Bottom sheet top corners
+  static const double dialog = 16.0; // Dialog/modal radius
 }
 
 /// Animation durations

@@ -9,6 +9,10 @@ import '../services/spaced_repetition_service.dart';
 import '../utils/theme_helper.dart';
 import '../widgets/common/custom_button.dart';
 import '../widgets/dialogs/reschedule_dialog.dart';
+import '../widgets/common/figma_button.dart';
+import '../widgets/analytics/circular_progress_ring.dart';
+import 'fullscreen_reader_screen.dart';
+import 'edit_topic_screen.dart';
 
 /// Topic Detail screen - View topic content and metadata
 class TopicDetailScreen extends StatefulWidget {
@@ -161,6 +165,13 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
       title: const Text('Topic Details'),
       elevation: 0,
       actions: [
+        // Fullscreen reader button
+        if (!_isLoading && _error == null)
+          IconButton(
+            icon: const Icon(Icons.fullscreen),
+            tooltip: 'Open in fullscreen',
+            onPressed: _openFullscreenReader,
+          ),
         // Favorite button
         IconButton(
           icon: Icon(
@@ -248,6 +259,19 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
       ),
       child: Column(
         children: [
+          // Circular Progress Ring
+          Center(
+            child: CircularProgressRing(
+              currentStage: _currentTopic.currentStage,
+              totalStages: 5,
+              size: 120,
+              onTap: () => _showStageDetails(context),
+            ),
+          ),
+          ThemeHelper.vSpaceMedium,
+          ThemeHelper.divider,
+          ThemeHelper.vSpaceMedium,
+
           // Next review date
           _buildMetadataRow(
             context,
@@ -256,16 +280,6 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
             value: _formatNextReviewDate(),
             valueColor: _getReviewDateColor(),
           ),
-          ThemeHelper.vSpaceSmall,
-          ThemeHelper.divider,
-          ThemeHelper.vSpaceSmall,
-
-          // Current stage with interval
-          _buildStageRow(context),
-          ThemeHelper.vSpaceSmall,
-
-          // Progress bar
-          _buildProgressBar(context),
           ThemeHelper.vSpaceSmall,
           ThemeHelper.divider,
           ThemeHelper.vSpaceSmall,
@@ -614,6 +628,21 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
 
   // Action handlers
 
+  /// Open fullscreen reader
+  void _openFullscreenReader() {
+    if (_content == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenReaderScreen(
+          title: _currentTopic.title,
+          content: _content!,
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleMarkAsReviewed(BuildContext context) async {
     try {
       // Use SpacedRepetitionService to mark as reviewed
@@ -671,13 +700,7 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
   void _handleMenuAction(BuildContext context, String action) {
     switch (action) {
       case 'edit':
-        print('Edit topic: ${_currentTopic.id}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Edit functionality coming soon'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        _handleEditTopic(context);
         break;
 
       case 'reset':
@@ -700,6 +723,24 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
     }
   }
 
+  /// Handle edit topic
+  Future<void> _handleEditTopic(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditTopicScreen(topic: _currentTopic),
+      ),
+    );
+
+    // Reload content if topic was updated
+    if (result != null && result is Topic && mounted) {
+      setState(() {
+        _currentTopic = result;
+      });
+      _loadContent();
+    }
+  }
+
   /// Handle delete topic
   Future<void> _handleDeleteTopic(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -712,16 +753,14 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
           'This action cannot be undone.',
         ),
         actions: [
-          TextButton(
+          FigmaTextButton(
+            text: 'Cancel',
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
           ),
-          TextButton(
+          FigmaTextButton(
+            text: 'Delete',
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.danger,
-            ),
-            child: const Text('Delete'),
+            color: AppColors.danger,
           ),
         ],
       ),
@@ -816,16 +855,14 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
           'You will start from Stage 1 again with a 1-day interval.',
         ),
         actions: [
-          TextButton(
+          FigmaTextButton(
+            text: 'Cancel',
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
           ),
-          TextButton(
+          FigmaTextButton(
+            text: 'Reset',
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.danger,
-            ),
-            child: const Text('Reset'),
+            color: AppColors.danger,
           ),
         ],
       ),
@@ -862,6 +899,62 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
         ),
       );
     }
+  }
+
+  /// Show stage details dialog
+  void _showStageDetails(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Stage Progress'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Current Stage: ${_currentTopic.currentStage}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text('Progress: ${(_currentTopic.currentStage / 5 * 100).toInt()}%'),
+            const SizedBox(height: 16),
+            const Text(
+              'Stage Intervals:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            _buildStageInfo('Stage 0', 'New', _currentTopic.currentStage >= 0),
+            _buildStageInfo('Stage 1', '1 day', _currentTopic.currentStage >= 1),
+            _buildStageInfo('Stage 2', '3 days', _currentTopic.currentStage >= 2),
+            _buildStageInfo('Stage 3', '1 week', _currentTopic.currentStage >= 3),
+            _buildStageInfo('Stage 4', '2 weeks', _currentTopic.currentStage >= 4),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStageInfo(String stage, String interval, bool completed) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            completed ? Icons.check_circle : Icons.circle_outlined,
+            size: 18,
+            color: completed ? AppColors.success : AppColors.gray400,
+          ),
+          const SizedBox(width: 8),
+          Text('$stage: $interval'),
+        ],
+      ),
+    );
   }
 }
 

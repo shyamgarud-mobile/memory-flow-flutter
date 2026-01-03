@@ -1,7 +1,7 @@
 #!/bin/bash
 # Clear app data on device (reset database and cache)
 
-PACKAGE_NAME="com.example.memory_flow"
+PACKAGE_NAME="com.garud.shyamkumar.memoryflow"
 
 echo "🗑️  Clearing app data for $PACKAGE_NAME..."
 

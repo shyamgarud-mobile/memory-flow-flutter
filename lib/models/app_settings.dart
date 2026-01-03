@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 
 /// App settings model
 class AppSettings {
@@ -23,6 +24,7 @@ class AppSettings {
   // Appearance
   final ThemeMode themeMode;
   final String fontSize; // 'small', 'medium', 'large'
+  final AppColorScheme colorScheme; // Color theme
 
   const AppSettings({
     // Notifications defaults
@@ -46,6 +48,7 @@ class AppSettings {
     // Appearance defaults
     this.themeMode = ThemeMode.system,
     this.fontSize = 'medium',
+    this.colorScheme = AppColorScheme.modernProfessional,
   });
 
   AppSettings copyWith({
@@ -63,6 +66,7 @@ class AppSettings {
     List<int>? intervalStages,
     ThemeMode? themeMode,
     String? fontSize,
+    AppColorScheme? colorScheme,
   }) {
     return AppSettings(
       dailyReminderEnabled: dailyReminderEnabled ?? this.dailyReminderEnabled,
@@ -79,6 +83,7 @@ class AppSettings {
       intervalStages: intervalStages ?? this.intervalStages,
       themeMode: themeMode ?? this.themeMode,
       fontSize: fontSize ?? this.fontSize,
+      colorScheme: colorScheme ?? this.colorScheme,
     );
   }
 
@@ -103,6 +108,7 @@ class AppSettings {
       'intervalStages': intervalStages.join(','),
       'themeMode': themeMode.index,
       'fontSize': fontSize,
+      'colorScheme': colorScheme.index,
     };
   }
 
@@ -139,6 +145,7 @@ class AppSettings {
           : [1, 3, 7, 14, 30],
       themeMode: ThemeMode.values[map['themeMode'] ?? 0],
       fontSize: map['fontSize'] ?? 'medium',
+      colorScheme: AppColorScheme.values[map['colorScheme'] ?? 0],
     );
   }
 }
